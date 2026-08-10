@@ -1,0 +1,86 @@
+name: distributed-search-engine
+
+x-search-engine-service: &search-engine-service
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: distributed-search-engine:local
+  restart: unless-stopped
+  networks:
+    - search-cluster
+
+x-shard-service: &shard-service
+  <<: *search-engine-service
+  environment:
+    SPRING_PROFILES_ACTIVE: shard-node
+    SEARCHENGINE_PERSISTENCE_DIRECTORY: /var/lib/search-engine
+  healthcheck:
+    test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://localhost:8080/internal/shard/health"]
+    interval: 5s
+    timeout: 3s
+    retries: 12
+    start_period: 20s
+
+services:
+  coordinator:
+    <<: *search-engine-service
+    ports:
+      - "8080:8080"
+    environment:
+      SEARCHENGINE_COORDINATOR_NODES_0_ID: shard-a
+      SEARCHENGINE_COORDINATOR_NODES_0_URL: http://shard-a:8080
+      SEARCHENGINE_COORDINATOR_NODES_1_ID: shard-b
+      SEARCHENGINE_COORDINATOR_NODES_1_URL: http://shard-b:8080
+      SEARCHENGINE_COORDINATOR_NODES_2_ID: shard-c
+      SEARCHENGINE_COORDINATOR_NODES_2_URL: http://shard-c:8080
+      SEARCHENGINE_COORDINATOR_CONNECT_TIMEOUT: 2s
+      SEARCHENGINE_COORDINATOR_SEARCH_TIMEOUT: 5s
+    depends_on:
+      shard-a:
+        condition: service_healthy
+      shard-b:
+        condition: service_healthy
+      shard-c:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://localhost:8080/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  shard-a:
+    <<: *shard-service
+    environment:
+      SPRING_PROFILES_ACTIVE: shard-node
+      SEARCHENGINE_SHARD_NODE_ID: shard-a
+      SEARCHENGINE_PERSISTENCE_DIRECTORY: /var/lib/search-engine
+    volumes:
+      - shard-a-data:/var/lib/search-engine
+
+  shard-b:
+    <<: *shard-service
+    environment:
+      SPRING_PROFILES_ACTIVE: shard-node
+      SEARCHENGINE_SHARD_NODE_ID: shard-b
+      SEARCHENGINE_PERSISTENCE_DIRECTORY: /var/lib/search-engine
+    volumes:
+      - shard-b-data:/var/lib/search-engine
+
+  shard-c:
+    <<: *shard-service
+    environment:
+      SPRING_PROFILES_ACTIVE: shard-node
+      SEARCHENGINE_SHARD_NODE_ID: shard-c
+      SEARCHENGINE_PERSISTENCE_DIRECTORY: /var/lib/search-engine
+    volumes:
+      - shard-c-data:/var/lib/search-engine
+
+networks:
+  search-cluster:
+    driver: bridge
+
+volumes:
+  shard-a-data:
+  shard-b-data:
+  shard-c-data:

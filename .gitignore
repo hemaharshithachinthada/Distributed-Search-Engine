@@ -1,0 +1,39 @@
+# Maven build output
+target/
+
+# Runtime persistence
+search-engine-data/
+
+# Load-test output
+*.jtl
+load-testing/results/
+load-testing/reports/
+load-testing/report-output/
+load-testing/runtime-data/
+.venv/
+
+# Logs and JVM diagnostics
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+
+# Java and IDE output
+*.class
+bin/
+out/
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+
+# OS and editor metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~

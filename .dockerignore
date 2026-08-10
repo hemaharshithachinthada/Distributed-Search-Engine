@@ -1,0 +1,10 @@
+.git
+.github
+.idea
+.vscode
+target
+search-engine-data
+*.log
+*.iml
+docker-compose*.yml
+load-testing
